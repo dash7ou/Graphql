@@ -26,113 +26,125 @@ const Mutation = {
     const user = await prisma.mutation.deleteUser({ where: { id } }, info);
     return user;
   },
-  updateUser(parent, args, ctx, info) {
-    const { db } = ctx,
-      { id, data } = args;
-    let { users } = db;
-    const user = users.find(user => user.id === id);
-    if (!user) throw new Error('no user found with this id sorry');
+  async updateUser(parent, args, { prisma }, info) {
+    const { id, data } = args;
+    const userExist = await prisma.exists.User({ id });
+    if (!userExist) throw new Error('User you lookup not found');
     const dataKeys = Object.keys(data);
     if (dataKeys.includes('id')) throw new Error('You cant change that property');
-    if (dataKeys.includes('posts' || 'comments')) throw new Error('You can change from the place ');
-    dataKeys.forEach(key => (user[key] = data[key]));
-    return user;
+    if (dataKeys.includes('posts' || 'comments'))
+      throw new Error('You can not change from that place');
+    const updateUser = await prisma.mutation.updateUser({ data: data, where: { id } }, info);
+    return updateUser;
   },
-  createPost(parent, args, { db, pubsub }, info) {
-    let { posts, users } = db;
+  async createPost(parent, args, { prisma, pubsub }, info) {
     const { data } = args;
-    const { title, body, publish, author } = data;
-    if (!title || !body || !publish) {
+    const { title, body, published, author } = data;
+    if (!title || !body || !published) {
       throw new Error('There are require field missing');
     }
     if (!author) {
       throw new Error('No user to create post');
     }
-    const userExist = users.find(user => user.id === author);
-    if (!userExist) {
-      throw new Error('there is not user with this id ;)');
-    }
-
-    const post = {
-      id: uuidv4(),
-      title,
-      body,
-      publish,
-      author
-    };
-    posts.push(post);
-    pubsub.publish(`POST ${author}`, {
-      post: {
-        mutation: 'CREATED',
-        data: post
+    const userExist = await prisma.exists.User({ id: author });
+    if (!userExist) throw new Error('No User with this id');
+    delete data.author;
+    const dataCreatePost = {
+      ...data,
+      author: {
+        connect: {
+          id: author
+        }
       }
-    });
+    };
+    const post = await prisma.mutation.createPost({ data: dataCreatePost }, info);
+    if (!post) throw new Error('there are problem in create post');
     return post;
+
+    // const post = {
+    //   id: uuidv4(),
+    //   title,
+    //   body,
+    //   publish,
+    //   author
+    // };
+    // posts.push(post);
+    // pubsub.publish(`POST ${author}`, {
+    //   post: {
+    //     mutation: 'CREATED',
+    //     data: post
+    //   }
+    // });
+    // return post;
   },
-  deletePost(parent, args, { db, pubsub }, info) {
-    let { posts, users, comments } = db;
+  async deletePost(parent, args, { prisma, pubsub }, info) {
     const { id } = args;
     if (!id) throw new Error('there are require field is missing');
-    const post = posts.find(post => post.id === id);
+    const post = await prisma.exists.Post({ id });
     if (!post) throw new Error('no post !!');
-    const index = posts.indexOf(post);
-    posts.splice(index, 1);
-    comments = comments.filter(comment => comment.post !== id);
-    users.forEach(user => {
-      if (user.posts) {
-        user.posts.forEach(post => {
-          if (post === id) {
-            const index = user.posts.indexOf(post);
-            user.posts.splice(index, 1);
-          }
-        });
-      }
-    });
-    if (post.publish) {
-      pubsub.publish(`POST ${post.author}`, {
-        post: { mutation: 'DELETE', data: post }
-      });
-    }
-    return post;
+
+    const postDeleted = await prisma.mutation.deletePost({ where: { id } }, info);
+    return postDeleted;
+    // const index = posts.indexOf(post);
+    // posts.splice(index, 1);
+    // comments = comments.filter(comment => comment.post !== id);
+    // users.forEach(user => {
+    //   if (user.posts) {
+    //     user.posts.forEach(post => {
+    //       if (post === id) {
+    //         const index = user.posts.indexOf(post);
+    //         user.posts.splice(index, 1);
+    //       }
+    //     });
+    //   }
+    // });
+    // if (post.publish) {
+    //   pubsub.publish(`POST ${post.author}`, {
+    //     post: { mutation: 'DELETE', data: post }
+    //   });
+    // }
+    // return post;
   },
-  updatePost(parent, args, { db, pubsub }, info) {
-    let { posts } = db;
+  async updatePost(parent, args, { prisma, pubsub }, info) {
     const { id, data } = args;
-    const post = posts.find(post => post.id === id);
-    const originalPost = { ...post };
+    const post = await prisma.exists.Post({ id });
     if (!post) throw new Error('no user found with this id sorry');
+    // const originalPost = { ...post };
     const dataKeys = Object.keys(data);
     if (dataKeys.includes('author' || 'id')) throw new Error('You cant change that property');
     if (dataKeys.includes('comments')) throw new Error('You can change from the place ');
-    dataKeys.forEach(key => (post[key] = data[key]));
 
-    //subscription
-    if (post.publish && !originalPost.publish) {
-      //created
-      pubsub.publish(`POST ${originalPost.author}`, {
-        data: {
-          mutation: 'CREATED',
-          data: post
-        }
-      });
-    } else if (!post.publish && originalPost.publish) {
-      //deleted
-      pubsub.publish(`POST ${originalPost.author}`, {
-        post: {
-          mutation: 'DELETED',
-          data: originalPost
-        }
-      });
-    } else if (post.publish === originalPost.publish) {
-      //updated
-      pubsub.publish(`POST ${post.author}`, {
-        post: {
-          mutation: 'UPDATED',
-          data: post
-        }
-      });
-    }
-    return post;
+    const postUpdated = await prisma.mutation.updatePost({ data: data, where: { id } }, info);
+    return postUpdated;
+
+    // dataKeys.forEach(key => (post[key] = data[key]));
+
+    // //subscription
+    // if (post.publish && !originalPost.publish) {
+    //   //created
+    //   pubsub.publish(`POST ${originalPost.author}`, {
+    //     data: {
+    //       mutation: 'CREATED',
+    //       data: post
+    //     }
+    //   });
+    // } else if (!post.publish && originalPost.publish) {
+    //   //deleted
+    //   pubsub.publish(`POST ${originalPost.author}`, {
+    //     post: {
+    //       mutation: 'DELETED',
+    //       data: originalPost
+    //     }
+    //   });
+    // } else if (post.publish === originalPost.publish) {
+    //   //updated
+    //   pubsub.publish(`POST ${post.author}`, {
+    //     post: {
+    //       mutation: 'UPDATED',
+    //       data: post
+    //     }
+    //   });
+    // }
   },
   createComment(parent, args, { db, pubsub }, info) {
     let { comments, users, posts } = db;

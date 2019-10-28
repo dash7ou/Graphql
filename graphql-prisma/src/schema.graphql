@@ -35,13 +35,13 @@ input updateUserInput {
 input createPostInput {
   title: String!
   body: String!
-  publish: Boolean!
+  published: Boolean!
   author: ID!
 }
 input updatePostInput {
   title: String
   body: String
-  publish: Boolean
+  published: Boolean
 }
 input createCommentInput {
   text: String!
