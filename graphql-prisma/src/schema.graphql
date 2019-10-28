@@ -26,13 +26,11 @@ type Subscription {
 input createUserInput {
   name: String!
   email: String!
-  age: Int
 }
 
 input updateUserInput {
   name: String
   email: String
-  age: Int
 }
 input createPostInput {
   title: String!

@@ -1,42 +1,29 @@
-import uuidv4 from "uuid/v4";
+import uuidv4 from 'uuid/v4';
 
 const Mutation = {
-  createUser(parent, args, { db }, info) {
-    let { users } = db;
-    const { data } = args;
-    const { email, name, age } = data;
-    if (!email || !name) {
-      throw new Error("There are require felid");
-    }
-    const emailToken = users.some(user => user.email === email);
-    if (emailToken) {
-      throw new Error("Email is token");
-    }
-    const user = {
-      id: uuidv4(),
-      name,
-      email,
-      age
-    };
+  async createUser(parent, args, { prisma }, info) {
+    const {
+      data: { email }
+    } = args;
+    const { data: newUserData } = args;
 
-    users.push(user);
+    const emailToken = await prisma.exists.User({ email });
+    if (emailToken) {
+      throw new Error('Email already taken');
+    }
+
+    const user = await prisma.mutation.createUser({ data: newUserData }, info);
+    if (!user) {
+      throw new Error('there are some problem in create user');
+    }
     return user;
   },
-  deleteUser(parent, args, { db }, info) {
+  async deleteUser(parent, args, { prisma }, info) {
     const { id } = args;
-    let { users, posts, comments } = db;
-    if (!id) throw new Error("there are required field missing");
-    const user = users.find(user => user.id === id);
-    if (!user) throw new Error("No user to delete it");
-    const index = users.indexOf(user);
-    users.splice(index, 1);
-    posts = posts.filter(post => {
-      if (post.author === id) {
-        comments = comments.filter(comment => comment.post !== post.id);
-      }
-      return post.author !== id;
-    });
-    comments = comments.filter(comment => comment.author !== id);
+    const userExist = await prisma.exists.User({ id });
+    if (!userExist) throw new Error('this user not found');
+
+    const user = await prisma.mutation.deleteUser({ where: { id } }, info);
     return user;
   },
   updateUser(parent, args, ctx, info) {
@@ -44,12 +31,10 @@ const Mutation = {
       { id, data } = args;
     let { users } = db;
     const user = users.find(user => user.id === id);
-    if (!user) throw new Error("no user found with this id sorry");
+    if (!user) throw new Error('no user found with this id sorry');
     const dataKeys = Object.keys(data);
-    if (dataKeys.includes("id"))
-      throw new Error("You cant change that property");
-    if (dataKeys.includes("posts" || "comments"))
-      throw new Error("You can change from the place ");
+    if (dataKeys.includes('id')) throw new Error('You cant change that property');
+    if (dataKeys.includes('posts' || 'comments')) throw new Error('You can change from the place ');
     dataKeys.forEach(key => (user[key] = data[key]));
     return user;
   },
@@ -58,14 +43,14 @@ const Mutation = {
     const { data } = args;
     const { title, body, publish, author } = data;
     if (!title || !body || !publish) {
-      throw new Error("There are require field missing");
+      throw new Error('There are require field missing');
     }
     if (!author) {
-      throw new Error("No user to create post");
+      throw new Error('No user to create post');
     }
     const userExist = users.find(user => user.id === author);
     if (!userExist) {
-      throw new Error("there is not user with this id ;)");
+      throw new Error('there is not user with this id ;)');
     }
 
     const post = {
@@ -78,7 +63,7 @@ const Mutation = {
     posts.push(post);
     pubsub.publish(`POST ${author}`, {
       post: {
-        mutation: "CREATED",
+        mutation: 'CREATED',
         data: post
       }
     });
@@ -87,9 +72,9 @@ const Mutation = {
   deletePost(parent, args, { db, pubsub }, info) {
     let { posts, users, comments } = db;
     const { id } = args;
-    if (!id) throw new Error("there are require field is missing");
+    if (!id) throw new Error('there are require field is missing');
     const post = posts.find(post => post.id === id);
-    if (!post) throw new Error("no post !!");
+    if (!post) throw new Error('no post !!');
     const index = posts.indexOf(post);
     posts.splice(index, 1);
     comments = comments.filter(comment => comment.post !== id);
@@ -105,7 +90,7 @@ const Mutation = {
     });
     if (post.publish) {
       pubsub.publish(`POST ${post.author}`, {
-        post: { mutation: "DELETE", data: post }
+        post: { mutation: 'DELETE', data: post }
       });
     }
     return post;
@@ -115,12 +100,10 @@ const Mutation = {
     const { id, data } = args;
     const post = posts.find(post => post.id === id);
     const originalPost = { ...post };
-    if (!post) throw new Error("no user found with this id sorry");
+    if (!post) throw new Error('no user found with this id sorry');
     const dataKeys = Object.keys(data);
-    if (dataKeys.includes("author" || "id"))
-      throw new Error("You cant change that property");
-    if (dataKeys.includes("comments"))
-      throw new Error("You can change from the place ");
+    if (dataKeys.includes('author' || 'id')) throw new Error('You cant change that property');
+    if (dataKeys.includes('comments')) throw new Error('You can change from the place ');
     dataKeys.forEach(key => (post[key] = data[key]));
 
     //subscription
@@ -128,7 +111,7 @@ const Mutation = {
       //created
       pubsub.publish(`POST ${originalPost.author}`, {
         data: {
-          mutation: "CREATED",
+          mutation: 'CREATED',
           data: post
         }
       });
@@ -136,7 +119,7 @@ const Mutation = {
       //deleted
       pubsub.publish(`POST ${originalPost.author}`, {
         post: {
-          mutation: "DELETED",
+          mutation: 'DELETED',
           data: originalPost
         }
       });
@@ -144,7 +127,7 @@ const Mutation = {
       //updated
       pubsub.publish(`POST ${post.author}`, {
         post: {
-          mutation: "UPDATED",
+          mutation: 'UPDATED',
           data: post
         }
       });
@@ -156,18 +139,18 @@ const Mutation = {
     const { data } = args;
     const { text, author, post: postId } = data;
     if (!text) {
-      throw new Error("there are required field missing");
+      throw new Error('there are required field missing');
     }
     if (!author) {
-      throw new Error("no user to add comment");
+      throw new Error('no user to add comment');
     }
     if (!postId) {
-      throw new Error("no post to add comment");
+      throw new Error('no post to add comment');
     }
     const userExist = users.find(user => user.id === author);
-    if (!userExist) throw new Error("This user is not exist");
+    if (!userExist) throw new Error('This user is not exist');
     const postExist = posts.find(post => post.id === postId);
-    if (!postExist) throw new Error("this post not valid");
+    if (!postExist) throw new Error('this post not valid');
 
     const comment = {
       id: uuidv4(),
@@ -179,7 +162,7 @@ const Mutation = {
     if (comment.publish) {
       pubsub.publish(`COMMENT ${postId}`, {
         comment: {
-          mutation: "CREATED",
+          mutation: 'CREATED',
           data: comment
         }
       });
@@ -189,9 +172,9 @@ const Mutation = {
   deleteComment(parent, args, { db, pubsub }, info) {
     let { users, comments, posts } = db;
     const { id } = args;
-    if (!id) throw new Error("no comment to delete it");
+    if (!id) throw new Error('no comment to delete it');
     const comment = comments.find(comment => comment.id === id);
-    if (!comment) throw new Error("Sorry no post to delete it");
+    if (!comment) throw new Error('Sorry no post to delete it');
     const index = comments.indexOf(comment);
     comments.splice(index, 1);
     posts.forEach(post => {
@@ -215,7 +198,7 @@ const Mutation = {
       }
     });
     pubsub.publish(`COMMENT ${comment.post}`, {
-      comment: { mutation: "DELETED", data: comment }
+      comment: { mutation: 'DELETED', data: comment }
     });
     return comment;
   },
@@ -223,14 +206,14 @@ const Mutation = {
     let { comments } = db;
     const { id, data } = args;
     const comment = comments.find(comment => comment.id === id);
-    if (!comment) throw new Error("no user found with this id sorry");
+    if (!comment) throw new Error('no user found with this id sorry');
     const dataKeys = Object.keys(data);
-    if (dataKeys.includes("author" || "id" || "posts"))
-      throw new Error("You cant change that property");
+    if (dataKeys.includes('author' || 'id' || 'posts'))
+      throw new Error('You cant change that property');
     dataKeys.forEach(key => (comment[key] = data[key]));
     pubsub.publish(`COMMENT ${comment.post}`, {
       comment: {
-        mutation: "UPDATED",
+        mutation: 'UPDATED',
         data: comment
       }
     });
