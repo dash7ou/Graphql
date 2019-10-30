@@ -8,8 +8,6 @@ import Comment from './resolvers/Comment';
 import Subscription from './resolvers/Subscription';
 import prisma from './prisma';
 
-const pubsub = new PubSub();
-let dash = 'mohammed';
 const servers = new GraphQLServer({
   typeDefs: './src/schema.graphql',
   resolvers: {
@@ -21,7 +19,7 @@ const servers = new GraphQLServer({
     Comment
   },
   context(request) {
-    return { db, pubsub, prisma, request };
+    return { db, prisma, request };
   }
 });
 
