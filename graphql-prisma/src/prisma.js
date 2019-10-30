@@ -1,23 +1,18 @@
-import {
-    Prisma
-} from "prisma-binding";
+import { Prisma } from 'prisma-binding';
 
 const prisma = new Prisma({
-    typeDefs: "src/generated/prisma.graphql",
-    endpoint: "http://localhost:4466"
+  typeDefs: 'src/generated/prisma.graphql',
+  endpoint: 'http://localhost:4466',
+  secret: `thisismyfuckensecretforprisma`
 });
 
-export {
-    prisma as
-    default
-}
+export { prisma as default };
 
 // prisma.query.users(null , "{id name email posts{id title body published}}")
 //     .then(data=> console.log(JSON.stringify(data , undefined  ,2)))
 //     .catch(err=>{
 //         console.log(err)
 //     });
-
 
 // prisma.mutation.createPost({
 //     data:{
@@ -56,10 +51,6 @@ export {
 //     }
 // },`{id name}`)
 
-
-
-
-
 // prisma.exists.Comment({
 //     id:"ck26ck0cb00ta0859coyj9ujp",
 //     text: "this is greate post :)",
@@ -69,7 +60,6 @@ export {
 // }).then(existed=>{
 //     console.log(existed);
 // });
-
 
 // const createPostForUser = async (authorId, data) => {
 //     try {
@@ -100,7 +90,6 @@ export {
 //     }
 // }
 
-
 // createPostForUser("ck260dgur02d40759dkqkninz", {
 //         title: "alazher",
 //         body: "this is fucker things",
@@ -108,7 +97,6 @@ export {
 //     })
 //     .then(data => console.log(data))
 //     .catch(err => console.log(err))
-
 
 // const updatePostForUser = async (postId, data) => {
 //     try {

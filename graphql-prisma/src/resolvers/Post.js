@@ -1,15 +1,4 @@
-const Post = {
-  // author(parent, args, { db }, info) {
-  //   const { users } = db;
-  //   const { author } = parent;
-  //   return users.find(user => user.id === author);
-  // },
-  // comments(parent, args, { db }, info) {
-  //   const { comments } = db;
-  //   const { id } = parent;
-  //   return comments.filter(comment => comment.post === id);
-  // }
-};
+const Post = {};
 
 // now we did not have all that because of prisma.query and include info init
 
