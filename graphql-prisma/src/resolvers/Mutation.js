@@ -112,6 +112,10 @@ const Mutation = {
     if (dataKeys.includes('comments')) throw new Error('You can change from the place ');
 
     const postUpdated = await prisma.mutation.updatePost({ data: data, where: { id } }, info);
+    const isNotPublished = await prisma.exists.post({ id: id, isPublished: false });
+    if (isNotPublished) {
+      await prisma.mutation.deleteManyComments({ where: { post: { id: id } } });
+    }
     return postUpdated;
   },
 
@@ -127,9 +131,9 @@ const Mutation = {
     }
     const userExist = await prisma.exists.User({ id: userIdFromAuth });
     if (!userExist) throw new Error('This user is not exist');
-    const postExist = await prisma.exists.Post({ id: postId });
-    console.log(postExist);
+    const postExist = await prisma.query.Post({ id: postId }, `{published : true}`);
     if (!postExist) throw new Error('this post not valid');
+    if (!postExist.published) throw new Error('this post not published');
 
     const dataCreateComment = {
       ...data,
