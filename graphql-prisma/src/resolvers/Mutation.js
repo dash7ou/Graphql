@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Auth from '../utils/Auth';
+import generateJWT from '../utils/generateJWT';
 
 const Mutation = {
   async login(parent, args, { prisma }, info) {
@@ -10,7 +11,11 @@ const Mutation = {
     if (!user) throw new Error('there are some error in your email or password');
     const configPassword = await bcrypt.compare(password, user.password);
     if (!configPassword) throw new Error('Make sure from your email and password');
-    return { user, token: jwt.sign({ userId: user.id }, 'thisissecretcode') };
+    const token = generateJWT(user.id);
+    return {
+      user,
+      token
+    };
   },
   async createUser(parent, args, { prisma }, info) {
     const {
@@ -31,7 +36,11 @@ const Mutation = {
     if (!user) {
       throw new Error('there are some problem in create user');
     }
-    return { user, token: jwt.sign({ userId: user.id }, 'thisissecretcode') };
+    const token = generateJWT(user.id);
+    return {
+      user,
+      token
+    };
   },
 
   async deleteUser(parent, args, { prisma, request }, info) {
