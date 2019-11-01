@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Auth from '../utils/Auth';
 import generateJWT from '../utils/generateJWT';
+import hashIt from '../utils/hashIt';
 
 const Mutation = {
   async login(parent, args, { prisma }, info) {
@@ -30,7 +31,7 @@ const Mutation = {
 
     if (beforeHashing.length < 8) throw new Error('password must be 8 character or more.');
 
-    const password = await bcrypt.hash(beforeHashing, 12);
+    const password = await hashIt(beforeHashing);
 
     const user = await prisma.mutation.createUser({ data: { ...newUserData, password } });
     if (!user) {
@@ -61,6 +62,12 @@ const Mutation = {
     if (dataKeys.includes('id')) throw new Error('You cant change that property');
     if (dataKeys.includes('posts' || 'comments'))
       throw new Error('You can not change from that place');
+    if (data.password) {
+      const {
+        data: { password: oldPassword }
+      } = args;
+      data.password = await hashIt(oldPassword);
+    }
     const updateUser = await prisma.mutation.updateUser(
       { data: data, where: { id: userIdFromAuth } },
       info
