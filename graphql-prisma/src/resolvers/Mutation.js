@@ -79,7 +79,7 @@ const Mutation = {
     const userIdFromAuth = Auth(request);
     const { data } = args;
     const { title, body, published } = data;
-    if (!title || !body || !published) {
+    if (!title || !body || typeof published === Boolean) {
       throw new Error('There are require field missing');
     }
     if (!userIdFromAuth) {

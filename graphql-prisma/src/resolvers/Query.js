@@ -2,7 +2,13 @@ import Auth from '../utils/Auth';
 
 const Query = {
   users(parent, args, { prisma }, info) {
-    const opArgs = {};
+    let { first = null, skip = 0, start = '' } = args;
+
+    const opArgs = {
+      first,
+      skip,
+      start
+    };
     if (args.query) {
       opArgs.where = {
         OR: [
@@ -35,7 +41,12 @@ const Query = {
     return prisma.query.posts(opArgs, info);
   },
   posts(parent, args, { prisma }, info) {
-    const opArgs = {};
+    let { first = null, skip = 0, start = '' } = args;
+
+    const opArgs = {
+      first,
+      skip
+    };
     opArgs.where = {
       published: true
     };
