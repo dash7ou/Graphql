@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken';
+import request from 'graphql-request';
 
 const verifyToken = (req, requireAuth = true) => {
-  const header = req.request.headers.authorization;
+  const header = request.request
+    ? req.request.headers.authorization
+    : request.connection.context.Authorization;
 
   if (header) {
     const token = header.replace('Bearer ', '');

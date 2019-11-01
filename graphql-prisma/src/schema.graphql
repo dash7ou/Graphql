@@ -34,6 +34,7 @@ type Subscription {
   count: Int!
   comment(postId: ID!): commentSubscriptionPayload!
   post(userId: ID!): postSubscriptionPayload!
+  myPost: postSubscriptionPayload!
 }
 
 input createUserInput {
