@@ -24,6 +24,18 @@ const User = {
         }
       });
     }
+  },
+  comments: {
+    fragment: `fragment userId on User { id }`,
+    resolve(parent, args, { prisma }, info) {
+      return prisma.query.comments({
+        where: {
+          author: {
+            id: parent.id
+          }
+        }
+      });
+    }
   }
 };
 

@@ -2,12 +2,13 @@ import Auth from '../utils/Auth';
 
 const Query = {
   users(parent, args, { prisma }, info) {
-    let { first = null, skip = 0, start = '' } = args;
+    let { first = null, skip = 0, start = '', orderBy = null } = args;
 
     const opArgs = {
       first,
       skip,
-      start
+      start,
+      orderBy: orderBy
     };
     if (args.query) {
       opArgs.where = {
@@ -41,11 +42,12 @@ const Query = {
     return prisma.query.posts(opArgs, info);
   },
   posts(parent, args, { prisma }, info) {
-    let { first = null, skip = 0, start = '' } = args;
+    let { first = null, skip = 0, start = '', orderBy = null } = args;
 
     const opArgs = {
       first,
-      skip
+      skip,
+      orderBy
     };
     opArgs.where = {
       published: true
