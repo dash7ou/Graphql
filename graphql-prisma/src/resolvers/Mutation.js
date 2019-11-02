@@ -147,7 +147,7 @@ const Mutation = {
     }
     const userExist = await prisma.exists.User({ id: userIdFromAuth });
     if (!userExist) throw new Error('This user is not exist');
-    const postExist = await prisma.query.Post({ id: postId }, `{published : true}`);
+    const postExist = await prisma.query.post({ where: { id: postId } });
     if (!postExist) throw new Error('this post not valid');
     if (!postExist.published) throw new Error('this post not published');
 

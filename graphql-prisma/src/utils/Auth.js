@@ -8,7 +8,7 @@ const verifyToken = (req, requireAuth = true) => {
 
   if (header) {
     const token = header.replace('Bearer ', '');
-    const decoded = jwt.verify(token, 'thisissecretcode');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded) throw new Error('You are not owner');
 
     return decoded.userId;
