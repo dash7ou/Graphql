@@ -91,3 +91,28 @@ test('should return all publish posts', async () => {
   expect(response.data.posts.length).toBe(1);
   expect(response.data.posts[0].published).toBe(true);
 }, 10000);
+
+test('should not login with bad credentials', async () => {
+  const login = gql`
+    mutation {
+      login(data: {email: "moradNo@gmail.com", password: "somethingrandom"}) {
+        token
+      }
+    }
+  `;
+  await expect(client.mutate({mutation: login})).rejects.toThrow();
+});
+
+test('should not signup with short password', async () => {
+  const createUser = gql`
+    mutation {
+      createUser(data: {name: "noone", email: "noone@example.com", password: "test"}) {
+        token
+        user {
+          id
+        }
+      }
+    }
+  `;
+  await expect(client.mutate({mutation: createUser})).rejects.toThrow();
+});
