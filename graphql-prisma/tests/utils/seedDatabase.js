@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../../src/prisma';
 
 const seedDatabase = async () => {
-  jest.setTimeout(10000);
+  jest.setTimeout(20000);
   await prisma.mutation.deleteManyPosts();
   await prisma.mutation.deleteManyUsers();
   const userTest = await prisma.mutation.createUser({

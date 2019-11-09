@@ -1,12 +1,11 @@
 import 'cross-fetch/polyfill';
 import '@babel/polyfill';
 import seedDatabase from './utils/seedDatabase';
-import ApolloBoost, {gql} from 'apollo-boost';
+import {gql} from 'apollo-boost';
 import prisma from '../src/prisma';
+import getClient from './utils/getClient';
 
-const client = new ApolloBoost({
-  uri: 'http://localhost:4000'
-});
+const client = getClient();
 
 beforeEach(seedDatabase);
 
