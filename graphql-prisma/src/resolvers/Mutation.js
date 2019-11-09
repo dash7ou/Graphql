@@ -5,10 +5,10 @@ import generateJWT from '../utils/generateJWT';
 import hashIt from '../utils/hashIt';
 
 const Mutation = {
-  async login(parent, args, { prisma }, info) {
-    const { email, password } = args.data;
+  async login(parent, args, {prisma}, info) {
+    const {email, password} = args.data;
     if (!email || !password) throw new Error('There are required field missing');
-    const user = await prisma.query.user({ where: { email } });
+    const user = await prisma.query.user({where: {email}});
     if (!user) throw new Error('there are some error in your email or password');
     const configPassword = await bcrypt.compare(password, user.password);
     if (!configPassword) throw new Error('Make sure from your email and password');
@@ -18,13 +18,13 @@ const Mutation = {
       token
     };
   },
-  async createUser(parent, args, { prisma }, info) {
+  async createUser(parent, args, {prisma}, info) {
     const {
-      data: { email, password: beforeHashing }
+      data: {email, password: beforeHashing}
     } = args;
-    const { data: newUserData } = args;
+    const {data: newUserData} = args;
 
-    const emailToken = await prisma.exists.User({ email });
+    const emailToken = await prisma.exists.User({email});
     if (emailToken) {
       throw new Error('Email already taken');
     }
@@ -33,7 +33,7 @@ const Mutation = {
 
     const password = await hashIt(beforeHashing);
 
-    const user = await prisma.mutation.createUser({ data: { ...newUserData, password } });
+    const user = await prisma.mutation.createUser({data: {...newUserData, password}});
     if (!user) {
       throw new Error('there are some problem in create user');
     }
@@ -44,19 +44,19 @@ const Mutation = {
     };
   },
 
-  async deleteUser(parent, args, { prisma, request }, info) {
+  async deleteUser(parent, args, {prisma, request}, info) {
     const userIdFromAuth = Auth(request);
-    const userExist = await prisma.exists.User({ id: userIdFromAuth });
+    const userExist = await prisma.exists.User({id: userIdFromAuth});
     if (!userExist) throw new Error('this user not found');
 
-    const user = await prisma.mutation.deleteUser({ where: { id: userIdFromAuth } }, info);
+    const user = await prisma.mutation.deleteUser({where: {id: userIdFromAuth}}, info);
     return user;
   },
 
-  async updateUser(parent, args, { prisma, request }, info) {
+  async updateUser(parent, args, {prisma, request}, info) {
     const userIdFromAuth = Auth(request);
-    const { data } = args;
-    const userExist = await prisma.exists.User({ id: userIdFromAuth });
+    const {data} = args;
+    const userExist = await prisma.exists.User({id: userIdFromAuth});
     if (!userExist) throw new Error('User you lookup not found');
     const dataKeys = Object.keys(data);
     if (dataKeys.includes('id')) throw new Error('You cant change that property');
@@ -64,28 +64,28 @@ const Mutation = {
       throw new Error('You can not change from that place');
     if (data.password) {
       const {
-        data: { password: oldPassword }
+        data: {password: oldPassword}
       } = args;
       data.password = await hashIt(oldPassword);
     }
     const updateUser = await prisma.mutation.updateUser(
-      { data: data, where: { id: userIdFromAuth } },
+      {data: data, where: {id: userIdFromAuth}},
       info
     );
     return updateUser;
   },
 
-  async createPost(parent, args, { prisma, request }, info) {
+  async createPost(parent, args, {prisma, request}, info) {
     const userIdFromAuth = Auth(request);
-    const { data } = args;
-    const { title, body, published } = data;
+    const {data} = args;
+    const {title, body, published} = data;
     if (!title || !body || typeof published === Boolean) {
       throw new Error('There are require field missing');
     }
     if (!userIdFromAuth) {
       throw new Error('No user to create post');
     }
-    const userExist = await prisma.exists.User({ id: userIdFromAuth });
+    const userExist = await prisma.exists.User({id: userIdFromAuth});
     if (!userExist) throw new Error('No User with this id');
     const dataCreatePost = {
       ...data,
@@ -95,30 +95,30 @@ const Mutation = {
         }
       }
     };
-    const post = await prisma.mutation.createPost({ data: dataCreatePost }, info);
+    const post = await prisma.mutation.createPost({data: dataCreatePost}, info);
     if (!post) throw new Error('there are problem in create post');
     return post;
   },
 
-  async deletePost(parent, args, { prisma, request }, info) {
-    const { id } = args;
+  async deletePost(parent, args, {prisma, request}, info) {
+    const {id} = args;
     const userIdFromAuth = Auth(request);
 
-    const post = await prisma.query.post({ where: { id } }, `{id title author{id}}`);
+    const post = await prisma.query.post({where: {id}}, `{id title author{id}}`);
     if (!post) throw new Error('no post !!');
 
     if (userIdFromAuth !== post.author.id) throw new Error('You cant delete that error sorry');
     if (!id) throw new Error('there are require field is missing');
 
-    const postDeleted = await prisma.mutation.deletePost({ where: { id } }, info);
+    const postDeleted = await prisma.mutation.deletePost({where: {id}}, info);
     return postDeleted;
   },
 
-  async updatePost(parent, args, { prisma, request }, info) {
-    const { id, data } = args;
+  async updatePost(parent, args, {prisma, request}, info) {
+    const {id, data} = args;
     const userIdFromAuth = Auth(request);
 
-    const post = await prisma.query.post({ where: { id } }, `{id title author{id}}`);
+    const post = await prisma.query.post({where: {id}}, `{id title author{id}}`);
 
     if (!post) throw new Error('no user found with this id sorry');
     if (post.author.id !== userIdFromAuth)
@@ -127,17 +127,17 @@ const Mutation = {
     if (dataKeys.includes('author' || 'id')) throw new Error('You cant change that property');
     if (dataKeys.includes('comments')) throw new Error('You can change from the place ');
 
-    const postUpdated = await prisma.mutation.updatePost({ data: data, where: { id } }, info);
-    const isNotPublished = await prisma.exists.post({ id: id, isPublished: false });
+    const postUpdated = await prisma.mutation.updatePost({data: data, where: {id}}, info);
+    const isNotPublished = await prisma.exists.Post({id: id, published: false});
     if (isNotPublished) {
-      await prisma.mutation.deleteManyComments({ where: { post: { id: id } } });
+      await prisma.mutation.deleteManyComments({where: {post: {id: id}}});
     }
     return postUpdated;
   },
 
-  async createComment(parent, args, { prisma, request }, info) {
-    const { data } = args;
-    const { text, post: postId } = data;
+  async createComment(parent, args, {prisma, request}, info) {
+    const {data} = args;
+    const {text, post: postId} = data;
     const userIdFromAuth = Auth(request);
     if (!text) {
       throw new Error('there are required field missing');
@@ -145,9 +145,9 @@ const Mutation = {
     if (!postId) {
       throw new Error('no post to add comment');
     }
-    const userExist = await prisma.exists.User({ id: userIdFromAuth });
+    const userExist = await prisma.exists.User({id: userIdFromAuth});
     if (!userExist) throw new Error('This user is not exist');
-    const postExist = await prisma.query.post({ where: { id: postId } });
+    const postExist = await prisma.query.post({where: {id: postId}});
     if (!postExist) throw new Error('this post not valid');
     if (!postExist.published) throw new Error('this post not published');
 
@@ -164,37 +164,37 @@ const Mutation = {
         }
       }
     };
-    const comment = await prisma.mutation.createComment({ data: dataCreateComment }, info);
+    const comment = await prisma.mutation.createComment({data: dataCreateComment}, info);
     return comment;
   },
 
-  async deleteComment(parent, args, { prisma, request }, info) {
-    const { id } = args;
+  async deleteComment(parent, args, {prisma, request}, info) {
+    const {id} = args;
     const userIdFromAuth = Auth(request);
 
     if (!id) throw new Error('no comment to delete it');
 
-    const comment = await prisma.query.comment({ where: { id } }, `{author{id}}`);
+    const comment = await prisma.query.comment({where: {id}}, `{author{id}}`);
     if (!comment) throw new Error('Sorry no post to delete it');
     if (comment.author.id !== userIdFromAuth)
       throw new Error('you have not permission to deleted that comment');
 
-    return prisma.mutation.deleteComment({ where: { id } }, info);
+    return prisma.mutation.deleteComment({where: {id}}, info);
   },
 
-  async updateComment(parent, args, { prisma, request }, info) {
-    const { id, data } = args;
+  async updateComment(parent, args, {prisma, request}, info) {
+    const {id, data} = args;
     const userIdFromAuth = Auth(request);
 
-    const comment = await prisma.query.comment({ where: { id } }, `author{id}`);
+    const comment = await prisma.query.comment({where: {id}}, `author{id}`);
     if (!comment) throw new Error('no comment found with this id sorry');
     if (comment.author.id !== userIdFromAuth)
       throw new Error('You have not permission to update that comment');
     const dataKeys = Object.keys(data);
     if (dataKeys.includes('author' || 'id' || 'posts'))
       throw new Error('You cant change that property');
-    return prisma.mutation.updateComment({ data: data, where: { id } }, info);
+    return prisma.mutation.updateComment({data: data, where: {id}}, info);
   }
 };
 
-export { Mutation as default };
+export {Mutation as default};

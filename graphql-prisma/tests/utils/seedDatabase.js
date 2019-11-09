@@ -12,6 +12,15 @@ const userOne = {
   jwt: undefined
 };
 
+const postOne = {
+  input: {
+    title: 'noor get fucking',
+    body: 'noor slot girls every day many one fuck here and here mother :)',
+    published: true
+  },
+  post: undefined
+};
+
 const seedDatabase = async () => {
   jest.setTimeout(20000);
   await prisma.mutation.deleteManyPosts();
@@ -21,11 +30,9 @@ const seedDatabase = async () => {
   });
 
   userOne.jwt = jwt.sign({userId: userOne.user.id}, process.env.JWT_SECRET);
-  await prisma.mutation.createPost({
+  postOne.post = await prisma.mutation.createPost({
     data: {
-      title: 'noor get fucking',
-      body: 'noor slot girls every day many one fuck here and here mother :)',
-      published: true,
+      ...postOne.input,
       author: {connect: {id: userOne.user.id}}
     }
   });
@@ -40,4 +47,4 @@ const seedDatabase = async () => {
   });
 };
 
-export {seedDatabase as default, userOne};
+export {seedDatabase as default, userOne, postOne};
