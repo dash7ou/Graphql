@@ -4,6 +4,7 @@ import seedDatabase from './utils/seedDatabase';
 import {gql} from 'apollo-boost';
 import prisma from '../src/prisma';
 import getClient from './utils/getClient';
+import {userOne} from './utils/seedDatabase';
 
 const client = getClient();
 
@@ -71,3 +72,30 @@ test('should not signup with short password', async () => {
   `;
   await expect(client.mutate({mutation: createUser})).rejects.toThrow();
 }, 10000);
+
+test('should fetch user profile', async () => {
+  const {
+    jwt,
+    user: {id: testID, name: testName, email: testEmail}
+  } = userOne;
+  const client = getClient(jwt);
+  const getProfile = gql`
+    query {
+      me {
+        id
+        name
+        email
+      }
+    }
+  `;
+
+  const {
+    data: {
+      me: {id, name, email}
+    }
+  } = await client.query({query: getProfile});
+
+  expect(id).toBe(testID);
+  expect(name).toBe(testName);
+  expect(email).toBe(testEmail);
+});
