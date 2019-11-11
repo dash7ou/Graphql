@@ -96,4 +96,4 @@ const seedDatabase = async () => {
   });
 };
 
-export {seedDatabase as default, userOne, postOne, userTwo, commentTwo, commentOne};
+export {seedDatabase as default, userOne, postOne, userTwo, commentOne, commentTwo};
